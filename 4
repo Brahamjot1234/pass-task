@@ -1,0 +1,48 @@
+const byte LED_PIN = 13;
+const byte METER_PIN = A4;
+double timerFrequency = 1.0; // Default timer frequency in Hz
+
+void setup()
+{
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(METER_PIN, INPUT);
+      
+  Serial.begin(9600);
+  
+  startTimer(timerFrequency); // Start timer with default frequency
+}
+
+void loop()
+{ 
+  // No need for any code in the loop
+}
+
+void startTimer(double timerFrequency)
+{
+  noInterrupts(); // Disable interrupts
+  
+  // Calculate the value for OCR1A based on the timer frequency
+  double timerPeriod = 1.0 / timerFrequency;
+  unsigned long ocrValue = (timerPeriod * 16000000UL) / 1024 - 1;
+  
+  // Configure Timer1 in CTC mode with prescaler of 1024
+  TCCR1A = 0; // Reset control register A
+  TCCR1B = 0; // Reset control register B
+  TCNT1 = 0;  // Reset counter value
+  
+  // Set OCR1A to generate interrupts based on the calculated value
+  OCR1A = ocrValue;
+  
+  // Enable CTC mode and set prescaler to 1024
+  TCCR1B |= (1 << WGM12) | (1 << CS12) | (1 << CS10);
+  
+  // Enable Timer1 Compare A interrupt
+  TIMSK1 |= (1 << OCIE1A);
+  
+  interrupts(); // Enable interrupts
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+   digitalWrite(LED_PIN, digitalRead(LED_PIN) ^ 1); // Toggle LED state
+}
